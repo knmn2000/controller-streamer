@@ -21,6 +21,9 @@
 *.xml           text eol=lf
 *.md            text eol=lf
 *.txt           text eol=lf
+# Checksum files must be LF: a CRLF here puts a  in the filename and
+# "sha256sum -c" then fails to find the file on macOS and Linux.
+*.sha256        text eol=lf
 *.sh            text eol=lf
 CMakeLists.txt  text eol=lf
 
