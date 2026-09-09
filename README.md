@@ -1,15 +1,21 @@
 # controller-streamer
 
-Use a game controller attached to one machine to play games on a Windows PC,
-over your local network.
+**Your PC's Bluetooth is broken, so you can't pair your controller to it. Pair
+the controller to your phone instead — this streams the input to the PC over
+Wi-Fi, where it appears as a normal Xbox 360 controller that any game just
+uses.**
 
-The controller plugs into a **phone, a Mac, or another PC**. That machine reads
-it and streams the inputs over UDP to the Windows PC, where they appear as
-ordinary **virtual Xbox 360 controllers** that any game picks up with no
-per-game configuration. Rumble travels back the other way.
+That's the problem this solves. A dead, missing or flaky Bluetooth adapter on a
+desktop is common, and every usual workaround is irritating: buy a USB dongle,
+run a cable across the room, or re-pair the controller every time you switch
+machines. None of that is necessary — the controller is *already* paired to
+something with working Bluetooth. Use that machine as the radio and send the
+button presses over the network you already have.
 
-Measured added latency is around **2 ms one-way** over Wi-Fi on a home LAN,
-against a design budget of 10 ms.
+The sender can be a **phone, a Mac, or a second PC**, and rumble travels back
+the other way. Measured added latency is about **2 ms one-way** over Wi-Fi on a
+home LAN, against a design budget of 10 ms — comfortably inside the range where
+it feels like a wired pad.
 
 ```
   ┌──────────────────────┐         UDP 47800          ┌──────────────────────┐
@@ -23,15 +29,14 @@ against a design budget of 10 ms.
 
 Two controllers are supported simultaneously; the PC always presents two pads.
 
-## Why this exists
+## What it is not
 
-A controller paired to a phone or laptop is not usable by a PC game. The usual
-answers are a long USB cable, a dongle per pad, or unplugging and re-pairing.
-This streams the input instead, so the pad stays where it is.
+It is **not** remote play or screen streaming. Nothing about the game leaves the
+PC — the game runs on the PC and you look at the PC's screen. Only controller
+state crosses the network, 18 bytes per input packet at 120 Hz, which is exactly
+why the latency budget is achievable.
 
-It is deliberately *not* a remote-play or screen-streaming tool. Only controller
-state crosses the network — 18 bytes per input packet — which is why the latency
-budget is achievable at all.
+The phone is being used as a Bluetooth radio and nothing more.
 
 ---
 
@@ -211,7 +216,7 @@ pass everywhere. The Android port has an equivalent that checks the *same* wire
 vectors, since Java has no `static_assert` to protect it:
 
 ```bash
-java -cp classes org.controllerstreamer.sender.Protocol
+java -cp sender-android/out/classes org.controllerstreamer.sender.Protocol
 ```
 
 Windows-only diagnostics, which exist because the failure modes here are hard to

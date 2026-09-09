@@ -1,4 +1,20 @@
-// fake-sender.cpp - stand in for the Mac sender so the receiver's packet path
+// controller-streamer - stream a game controller over the LAN to a Windows PC
+// Copyright (C) 2026 knmn2000
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// fake-sender.cpp - stand in for a real sender so the receiver's packet path
 // can be verified from the PC alone (T6 gates 2/3 and the T8 echo mechanism).
 // Built against the repo's protocol/protocol.h - the SAME single source of
 // truth the real sender uses, so this also proves wire compatibility.

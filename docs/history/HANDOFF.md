@@ -1,3 +1,19 @@
+> **Historical document, kept for provenance.**
+>
+> This was the brief for one development session, written before the Windows
+> receiver had ever been built or run. It is *not* current documentation and
+> parts of it are now wrong:
+>
+> - Its "verification status" section is superseded; everything it lists as
+>   unproven has since been verified on real hardware.
+> - `sender-mac/` is now `sender-desktop/` and builds on Windows and Linux too.
+> - An Android sender exists, which this document predates entirely.
+>
+> For current instructions see [the README](../../README.md), and for the
+> failure modes we actually hit see [TROUBLESHOOTING.md](../../TROUBLESHOOTING.md).
+
+---
+
 # HANDOFF — Controller Streamer, PC-side bring-up
 
 You are picking up a project mid-flight. Read this whole file before running

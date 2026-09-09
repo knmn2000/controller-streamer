@@ -1,4 +1,20 @@
-﻿# setup-pc.ps1 - one-shot PC setup for the Controller Streamer receiver.
+﻿# controller-streamer - stream a game controller over the LAN to a Windows PC
+# Copyright (C) 2026 knmn2000
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# setup-pc.ps1 - one-shot PC setup for the Controller Streamer receiver.
 # Run from an ELEVATED PowerShell, inside the receiver-win folder:
 #   powershell -ExecutionPolicy Bypass -File .\setup-pc.ps1
 #
@@ -116,7 +132,8 @@ Step 6 "Done - next steps"
 $ips = (Get-NetIPAddress -AddressFamily IPv4 |
         Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" }).IPAddress
 Write-Host "  This PC's LAN IPv4 address(es): $($ips -join ', ')"
-Write-Host "  On the Mac, run:   ./build/sender <one-of-those-ips>"
+Write-Host "  On the sending machine: ./build/sender <one-of-those-ips>"
+Write-Host "  (or just open the Android app - it discovers this PC by itself)"
 Write-Host "  Verify pads here:  Win+R -> joy.cpl  (two 'Xbox 360 Controller' entries once running)"
 $ans = Read-Host "`nStart the receiver now? (y/n)"
 if ($ans -eq "y") { & $exe }

@@ -1,10 +1,26 @@
-﻿// receiver-win/main.cpp — Controller Streamer receiver (Study TRD v3.0, section 7).
+﻿// controller-streamer - stream a game controller over the LAN to a Windows PC
+// Copyright (C) 2026 knmn2000
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// receiver-win/main.cpp — Controller Streamer receiver (Study TRD v3.0, section 7).
 //
 // Threads (TRD 7.1):
 //   net thread      — recvfrom loop (250 ms timeout), validates, updates ViGEm
 //                     pads, records sender address, echoes latency probes.
 //   watchdog thread — 10 Hz: neutralizes stale pads (>500 ms silence) and
-//                     refreshes non-zero rumble to the Mac (the C8 strategy).
+//                     refreshes non-zero rumble back to the sender (the C8 strategy).
 //   ViGEm callbacks — driver-managed; store motor state + send one rumble
 //                     packet, nothing else.
 //   main thread     — setup, then sleeps until Ctrl-C, then teardown.
