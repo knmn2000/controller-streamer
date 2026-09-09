@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pad Streamer</string>
+    <string name="accessibility_description">Lets Pad Streamer read your game controller while other apps are in front, so streaming keeps working when you leave the app or pull down the notification shade. It reads controller input only, passes every event straight through, and does not inspect screen content.</string>
+</resources>

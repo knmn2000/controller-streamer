@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.controllerstreamer.sender"
+    android:versionCode="2"
+    android:versionName="1.1">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="35" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Streaming has to survive the UI going away and the screen going off:
+         a foreground service is exempt from Doze, and the wake lock keeps the
+         120 Hz send loop scheduled. CONNECTED_DEVICE is the honest service
+         type - this exists to talk to a gamepad and a PC on the LAN. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- specialUse rather than connectedDevice: Android 14+ additionally
+         demands one of BLUETOOTH_CONNECT / CHANGE_WIFI_STATE / NFC / ... for
+         connectedDevice, and this app needs none of them - Android delivers
+         gamepad input without any Bluetooth permission. Declaring one purely
+         to pass that gate would either be an unused permission or a runtime
+         prompt for access we never use. specialUse exists for exactly this
+         case and carries no runtime cap. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+
+    <application
+        android:label="@string/app_name"
+        android:allowBackup="false"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".StreamService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Relays local game controller input to a PC on the same LAN at 120 Hz and applies rumble coming back. Must keep running while other apps are in the foreground and while the screen is off, which is the whole point of the app." />
+        </service>
+
+        <!-- Global gamepad capture. Android only delivers pad events to the
+             focused window, so without this streaming dies the moment the
+             notification shade opens or another app comes forward. The user
+             must enable it by hand in Settings > Accessibility. -->
+        <service
+            android:name=".PadAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+    </application>
+</manifest>

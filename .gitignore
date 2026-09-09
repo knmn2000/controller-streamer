@@ -1,0 +1,52 @@
+# --- build output -------------------------------------------------------------
+build/
+out/
+classes/
+dist/
+*.o
+*.obj
+*.exe
+*.lib
+*.a
+*.dll
+*.dylib
+*.so
+*.pdb
+*.ilk
+*.exp
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+_deps/
+
+# --- signing keys -------------------------------------------------------------
+# The Android build generates this on first run. It is a throwaway debug key
+# with a published password, only good for sideloading - but signing material
+# should never be committed regardless, and a real release needs its own key.
+*.keystore
+*.jks
+*.p12
+
+# --- Android intermediates ----------------------------------------------------
+*.apk
+*.dex
+*.ap_
+local.properties
+.gradle/
+
+# --- editors and OS -----------------------------------------------------------
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- logs and scratch ---------------------------------------------------------
+*.log
