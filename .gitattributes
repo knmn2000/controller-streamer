@@ -1,0 +1,33 @@
+# Normalise line endings in the repository so a checkout does not depend on
+# each contributor's core.autocrlf setting.
+#
+# Note this controls line endings only - Git never rewrites a byte-order mark.
+# protocol/protocol.h, receiver-win/main.cpp and the .ps1 scripts carry a UTF-8
+# BOM deliberately (MSVC and Windows PowerShell 5.1 both need it to decode
+# non-ASCII correctly), and that is preserved regardless of the rules below.
+
+*               text=auto
+
+# Windows-only scripts: cmd.exe in particular is happier with CRLF.
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Everything else that is shared across platforms stays LF in the working tree,
+# so a macOS or Linux contributor sees what their compiler expects.
+*.c             text eol=lf
+*.h             text eol=lf
+*.cpp           text eol=lf
+*.java          text eol=lf
+*.xml           text eol=lf
+*.md            text eol=lf
+*.txt           text eol=lf
+*.sh            text eol=lf
+CMakeLists.txt  text eol=lf
+
+# Never touched.
+*.png           binary
+*.jpg           binary
+*.apk           binary
+*.keystore      binary
+*.jks           binary
+LICENSE         text eol=lf
