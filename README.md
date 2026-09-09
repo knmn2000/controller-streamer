@@ -88,16 +88,22 @@ In tray mode the log goes to `%LOCALAPPDATA%\controller-streamer\receiver.log`.
 
 ### 2a. Sender — Android
 
-Build the APK (needs the Android SDK; no Gradle, no Android Studio project):
+**Easiest:** install the prebuilt
+[`release/controller-streamer-sender.apk`](release/controller-streamer-sender.apk)
+on the phone — no Android SDK needed. There is a checksum next to it and a note
+about its (debug) signature in [`release/README.md`](release/README.md).
+
+Or build it yourself; there is no Gradle and no Android Studio project, just the
+SDK's own tools:
 
 ```
 cd sender-android
 build-apk.cmd
 ```
 
-Install `dist\controller-streamer-sender.apk`, open it, and it finds the PC by
-itself — there is no IP to type. Then tap **Enable background capture** and turn
-the service on under Settings → Accessibility.
+Either way: open the app and it finds the PC by itself — there is no IP to type.
+Then tap **Enable background capture** and turn the service on under
+Settings → Accessibility.
 
 **That accessibility service is what makes it usable.** Android delivers
 controller events only to the focused window, so without it, input freezes the

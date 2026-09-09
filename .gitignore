@@ -38,6 +38,10 @@ _deps/
 local.properties
 .gradle/
 
+# ...except the prebuilt APK we ship, so the app is installable without setting
+# up the Android SDK. It is ~30 KB, so the cost to the history is negligible.
+!release/*.apk
+
 # --- editors and OS -----------------------------------------------------------
 .vs/
 .vscode/
