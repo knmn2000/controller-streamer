@@ -1,125 +1,90 @@
 # controller-streamer
 
-**Your PC's Bluetooth is broken, so you can't pair your controller to it. Pair
-the controller to your phone instead — this streams the input to the PC over
-Wi-Fi, where it appears as a normal Xbox 360 controller that any game just
-uses.**
+My PC's Bluetooth was dead, so I couldn't pair a controller to it. This pairs the
+controller to my **phone** instead and streams the input to the PC over Wi-Fi,
+where it shows up as a plain **Xbox 360 controller**. Games need no
+configuration. Rumble comes back the other way.
 
-That's the problem this solves. A dead, missing or flaky Bluetooth adapter on a
-desktop is common, and every usual workaround is irritating: buy a USB dongle,
-run a cable across the room, or re-pair the controller every time you switch
-machines. None of that is necessary — the controller is *already* paired to
-something with working Bluetooth. Use that machine as the radio and send the
-button presses over the network you already have.
-
-The sender can be a **phone, a Mac, or a second PC**, and rumble travels back
-the other way. Measured added latency is about **2 ms one-way** over Wi-Fi on a
-home LAN, against a design budget of 10 ms — comfortably inside the range where
-it feels like a wired pad.
+Added latency measures **~2 ms one-way** over Wi-Fi (budget was 10 ms).
 
 ```
-  ┌──────────────────────┐         UDP 47800          ┌──────────────────────┐
-  │  Android / macOS /   │  input, 120 Hz  ────────▶  │   Windows PC         │
-  │  Windows / Linux     │                            │                      │
-  │                      │  ◀────────  rumble         │  ViGEmBus driver     │
-  │  real controller     │             heartbeat      │       ▼              │
-  │  (Bluetooth or USB)  │             discovery      │  2 virtual X360 pads │
-  └──────────────────────┘                            └──────────────────────┘
+   phone / Mac / PC                                    Windows PC
+ ┌──────────────────────┐         UDP 47800        ┌──────────────────────┐
+ │  real controller     │   input 120 Hz  ──────▶  │  receiver.exe        │
+ │  (Bluetooth or USB)  │                          │        │             │
+ │                      │  ◀──────  rumble         │  ViGEmBus driver     │
+ │  reads it with SDL2  │           heartbeat      │        ▼             │
+ │  or Android input    │           discovery      │  2 virtual X360 pads │
+ └──────────────────────┘                          └──────────────────────┘
 ```
 
-Two controllers are supported simultaneously; the PC always presents two pads.
+The game still runs on the PC and you still watch the PC's screen. Only
+controller state crosses the network, 18 bytes per packet. Your phone is acting
+as the Bluetooth radio and nothing else.
 
-## What it is not
-
-It is **not** remote play or screen streaming. Nothing about the game leaves the
-PC — the game runs on the PC and you look at the PC's screen. Only controller
-state crosses the network, 18 bytes per input packet at 120 Hz, which is exactly
-why the latency budget is achievable.
-
-The phone is being used as a Bluetooth radio and nothing more.
-
----
-
-## Supported combinations
-
-| Sender (has the controller) | Status | Notes |
+| Sender | State | Notes |
 |---|---|---|
-| **Android** phone/tablet, API 24+ | works | Streams with the phone **locked**; needs an accessibility service enabled |
-| **macOS** | works | SDL2 |
-| **Windows** (PC → PC) | works | SDL2; don't run it on the receiving PC — see below |
-| **Linux** | should work | Same code path as macOS; untested |
+| Android, API 24+ | works | keeps streaming with the phone **locked** ([how](#android)) |
+| macOS | works | SDL2 |
+| Windows (PC to PC) | works | SDL2. Not on the receiving PC ([why](#pc-to-pc)) |
+| Linux | untested | same code path as macOS |
 
-The receiver is Windows-only by nature: it depends on
-[ViGEmBus](https://github.com/nefarius/ViGEmBus) to create the virtual pads.
+Receiver is Windows-only: it needs [ViGEmBus](https://github.com/nefarius/ViGEmBus)
+to create the pads. Two controllers max.
 
 ---
 
-## Quick start
+## 1. Windows PC
 
-### 1. The Windows PC (receiver) — do this first
-
-From an **elevated** PowerShell, inside `receiver-win\`:
+Elevated PowerShell, in `receiver-win\`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\setup-pc.ps1
 ```
 
-That checks your toolchain, installs the ViGEmBus driver if missing, adds a
-firewall rule for UDP 47800, builds the receiver, and prints the PC's LAN IP.
-It is safe to re-run; every step checks before acting.
-
-Then run it:
+Installs the ViGEmBus driver, adds a firewall rule for UDP 47800, builds, prints
+your LAN IP. Safe to re-run. Then:
 
 ```powershell
 .\build\Release\receiver.exe
 ```
 
-You should see `2 virtual X360 pads up, listening on UDP 47800`, and two
-"Xbox 360 Controller" entries in `joy.cpl`.
+Expect `2 virtual X360 pads up, listening on UDP 47800` and two "Xbox 360
+Controller" entries in `joy.cpl`.
 
-Optional, once you are happy with it:
+Optional:
 
 ```powershell
-.\build\Release\receiver.exe --tray          # hide the console, sit in the tray
+.\build\Release\receiver.exe --tray                                 # tray icon, no console
 powershell -ExecutionPolicy Bypass -File .\autostart.ps1 -Install   # start at logon
 ```
 
-In tray mode the log goes to `%LOCALAPPDATA%\controller-streamer\receiver.log`.
+Tray mode logs to `%LOCALAPPDATA%\controller-streamer\receiver.log`.
 
-### 2a. Sender — Android
+## 2. Sender
 
-**Easiest:** install the prebuilt
-[`release/controller-streamer-sender.apk`](release/controller-streamer-sender.apk)
-on the phone — no Android SDK needed. There is a checksum next to it and a note
-about its (debug) signature in [`release/README.md`](release/README.md).
+### Android
 
-Or build it yourself; there is no Gradle and no Android Studio project, just the
-SDK's own tools:
+Install [`release/controller-streamer-sender.apk`](release/controller-streamer-sender.apk)
+(29 KB, checksum and signature notes in [`release/`](release/README.md)), or build it:
 
 ```
 cd sender-android
 build-apk.cmd
 ```
 
-Either way: open the app and it finds the PC by itself — there is no IP to type.
-Then tap **Enable background capture** and turn the service on under
-Settings → Accessibility.
+No Gradle, no Android Studio project. Needs the Android SDK.
 
-**That accessibility service is what makes it usable.** Android delivers
-controller events only to the focused window, so without it, input freezes the
-moment you open the notification shade or lock the phone. With it, streaming
-keeps working with the screen off.
+Open the app. It finds the PC on its own, so there is no IP to type. Then tap
+**Enable background capture** and switch it on under Settings → Accessibility.
 
-Two caveats worth knowing up front:
+Android only delivers controller events to the focused window. Without that
+service, input freezes the moment you pull down the notification shade. With it,
+streaming survives a locked screen. Two things that will trip you up:
+[reinstalling the APK disables it](TROUBLESHOOTING.md#it-stopped-working-after-an-update),
+and Android may [block enabling it as a "restricted setting"](TROUBLESHOOTING.md#android-refuses-to-enable-the-service-restricted-setting).
 
-- Android **disables the accessibility service every time you reinstall the
-  APK**. Re-enable it after each update. The app's headline turns amber when
-  it is off, so the state is visible rather than silent.
-- If Android refuses with a *"restricted setting"* message, that is its
-  sideloading guard: Settings → Apps → the app → **⋮** → *Allow restricted
-  settings*, then try again.
-
-### 2b. Sender — macOS, Windows or Linux
+### macOS, Windows, Linux
 
 ```bash
 brew install sdl2 cmake          # macOS
@@ -133,142 +98,120 @@ cmake --build build
 ./build/sender <pc_ip>
 ```
 
-On Windows, SDL2 has no standard location, so either install it via vcpkg, pass
-`-DSDL2_DIR=<dir with sdl2-config.cmake>`, or let CMake fetch a prebuilt copy:
+Windows has no standard SDL2 location, so pick one: vcpkg,
+`-DSDL2_DIR=<dir with sdl2-config.cmake>`, or let CMake fetch a prebuilt copy.
 
 ```powershell
 cmake -B build -G "Visual Studio 17 2022" -A x64 -DFETCH_SDL2=ON
 cmake --build build --config Release
 ```
 
-`SDL2.dll` must sit next to `sender.exe` at runtime.
+`SDL2.dll` has to sit next to `sender.exe`.
 
-> **PC → PC:** run the sender on the machine with the controller, never on the
-> receiving PC. The receiver's own virtual pads are visible to SDL, so a sender
-> on the same machine will pick them up and stream them back to itself.
+<a name="pc-to-pc"></a>
+> **PC to PC:** run the sender on the machine holding the controller, never on
+> the receiving PC. SDL sees the receiver's own virtual pads and will stream them
+> straight back to itself.
 
-### 3. Measure it
+## 3. Measure
 
 ```bash
 ./build/sender <pc_ip> --measure
 ```
 
-Prints min/avg/max one-way estimates every second, derived from a 10 Hz
-timestamp echo. It is RTT/2 measured against a single clock, so no cross-machine
-clock sync is involved.
+Min/avg/max one-way, once a second, from a 10 Hz timestamp echo. RTT/2 off a
+single clock, so no cross-machine clock sync.
 
 ---
 
-## How it works
+## Protocol
 
-**Wire protocol v3** lives in [`protocol/protocol.h`](protocol/protocol.h) and is
-the single source of truth, compiled into every C++ end and hand-ported (with a
-matching test) for Android. Packets are big-endian and `#pragma pack(1)`, with
-`static_assert`s on every struct size so layout drift fails at compile time
-rather than in a packet capture at midnight.
-
-A valid packet starts `4d 58 03` — `"MX"` plus the version.
+[`protocol/protocol.h`](protocol/protocol.h) is the single source of truth,
+compiled into every C++ end and hand-ported to Java with a
+[test on the same wire vectors](sender-android/src/org/controllerstreamer/sender/Protocol.java).
+Big-endian, `#pragma pack(1)`, a `static_assert` on every struct size. Valid
+packets start `4d 58 03` (`"MX"` + version).
 
 | Packet | Size | Direction |
 |---|---|---|
 | Input | 18 B | sender → PC, 120 Hz |
 | Rumble | 8 B | PC → sender, on change + 10 Hz refresh |
 | Heartbeat | 6 B | sender → PC, 1 Hz |
-| Disconnect | 6 B | sender → PC, ×3 on pad removal |
+| Disconnect | 6 B | sender → PC, ×3 on removal |
 | Latency probe | 14 B | echoed verbatim by the PC |
-| Discover / reply | 6 B / 38 B | broadcast; reply carries the PC's hostname |
+| Discover / reply | 6 / 38 B | broadcast; reply carries the PC's hostname |
 
-A few decisions that are load-bearing rather than incidental:
+Four decisions you should not "simplify" without reading why:
 
-- **Button bits equal ViGEm's `XUSB_BUTTON` values**, so the receiver copies the
-  mask straight into `XUSB_REPORT.wButtons` with no translation table.
-- **Sequence numbers are RFC 1982 style.** A naive `<=` comparison breaks every
-  ~2 s at 120 Hz with a `uint8_t` counter.
-- **Axis inversion special-cases `INT16_MIN`**, because `-(-32768)` does not fit
-  in an `int16_t` and signed overflow is undefined behaviour.
-- **No stick deadzone is applied anywhere.** Games apply their own, and
-  rescaling at the sender would change the feel in every game.
-- **Discovery reuses the latency echo.** The receiver echoes `PT_LATENCY`
-  verbatim, so a sender that broadcasts one learns the PC's address from the
-  reply's source — which is why discovery also works against receivers built
-  before `PT_DISCOVER` existed.
+- **Button bits equal ViGEm's `XUSB_BUTTON` values.** The receiver copies the
+  mask into `XUSB_REPORT.wButtons` with no translation table.
+- **Sequence numbers use RFC 1982 comparison.** A naive `<=` breaks every ~2 s at
+  120 Hz with a `uint8_t` counter.
+- **Axis inversion special-cases `INT16_MIN`.** `-(-32768)` overflows an
+  `int16_t`, which is undefined behaviour.
+- **No stick deadzone anywhere.** Games apply their own; rescaling here changes
+  the feel in every game.
 
-There is a longer design document in [`docs/design-trd-v3.md`](docs/design-trd-v3.md);
-code comments reference its section IDs (`C2`, `C5`, `C8`, `7.3` …).
+Longer rationale in [`docs/design-trd-v3.md`](docs/design-trd-v3.md), which the
+code comments reference by section (`C2`, `C5`, `C8`, `7.3`).
 
-## Repository layout
+## Layout
 
 ```
-protocol/protocol.h        wire protocol v3 - single source of truth
-receiver-win/              Windows receiver (Winsock2 + ViGEmClient)
-  setup-pc.ps1             one-shot setup: driver, firewall, build
-  autostart.ps1            run at logon in tray mode
-sender-desktop/            macOS / Windows / Linux sender (SDL2)
-sender-android/            Android sender, built without Gradle
-tests/                     protocol tests and diagnostics (see below)
-docs/                      design document and project history
+protocol/protocol.h    wire protocol v3, shared by every end
+receiver-win/          Windows receiver (Winsock2 + ViGEmClient)
+  setup-pc.ps1         driver, firewall, build
+  autostart.ps1        run at logon in tray mode
+sender-desktop/        macOS / Windows / Linux sender (SDL2)
+sender-android/        Android sender, no Gradle
+tests/                 protocol tests + Windows diagnostics
+docs/                  design document, project history
+release/               prebuilt APK
 ```
 
-## Tests and diagnostics
+## Tests
 
 ```bash
-cd tests
-cmake -B build && cmake --build build
-./build/protocol_test          # or build\Release\protocol_test.exe
+cd tests && cmake -B build && cmake --build build
+./build/protocol_test                    # build\Release\protocol_test.exe on Windows
 ```
 
-`protocol_test` needs no hardware and no network, and is the one test that must
-pass everywhere. The Android port has an equivalent that checks the *same* wire
-vectors, since Java has no `static_assert` to protect it:
+`protocol_test` needs no hardware and no network. The Java port has an
+equivalent:
 
 ```bash
 java -cp sender-android/out/classes org.controllerstreamer.sender.Protocol
 ```
 
-Windows-only diagnostics, which exist because the failure modes here are hard to
-see from the outside:
+Windows diagnostics in [`tests/`](tests/):
 
-| Tool | What it is for |
+| Tool | Use |
 |---|---|
-| `xinput-probe list` | what the virtual pads currently report |
-| `xinput-probe capture <slot> <secs>` | per-axis extremes — proves stick orientation and trigger range |
+| `xinput-probe list` | what the virtual pads report right now |
+| `xinput-probe capture <slot> <secs>` | per-axis extremes. Hold a direction, read the extreme: this is how you check stick signs |
 | `xinput-probe rumble <slot> <lg> <sm> <ms>` | drive one pad's motors, to check slots don't cross |
-| `fake-sender` | drive the receiver from the same PC, with no phone or Mac involved |
-| `vigem-diag` | the exact `VIGEM_ERROR` code from connect/target_add |
+| `fake-sender` | drive the receiver from the same PC, no phone or Mac needed |
+| `vigem-diag` | the exact `VIGEM_ERROR` from connect/target_add |
 
-`xinput-probe capture` is the honest way to check axis signs: hold a direction
-during the window and read the extreme, rather than trusting a live readout.
+## Limits
 
-Note that XInput's `dwPacketNumber` increments when the reported **state
-changes**, not once per packet received — a physically still stick freezes it.
-It is not a liveness signal.
-
-## Known limitations
-
-- **Two controllers maximum**, matched to the two virtual pads. A third is
-  declined with a message.
-- **Both virtual pads always exist**, so with one controller connected a game
-  may see an idle "player 2". Its sticks rest inside XInput's deadzone, so games
-  ignore the axes, but join prompts may notice it.
-- **The Android app must be open or its accessibility service enabled.** There
-  is no way to read controller input in the background otherwise.
-- **DualSense adaptive triggers and its voice-coil haptics are not reachable.**
-  Not an Android limitation: PC games drive rumble through XInput, which carries
-  exactly two 0–255 motor values, so that is the maximum fidelity available on
-  this path.
-- **No encryption or authentication.** Anyone on your LAN can send packets to
-  the receiver. It is built for a trusted home network.
-- Virtual pads are created at startup, not on demand.
+| | |
+|---|---|
+| Controllers | 2, matched to the 2 virtual pads. A third is declined |
+| Idle pad | both pads always exist, so a game may see an idle "player 2". Sticks rest inside XInput's deadzone, but join prompts can still notice |
+| Android background | needs the app open or the accessibility service on. No other way to read controller input |
+| DualSense haptics | adaptive triggers and voice-coil haptics are unreachable. XInput carries two 0-255 motor values, so that is the ceiling, not an Android limit |
+| Security | none. Anyone on your LAN can send packets. Built for a home network |
 
 ## Troubleshooting
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — it covers the failure modes that
-actually came up, and the specific diagnostic that identified each one.
+[TROUBLESHOOTING.md](TROUBLESHOOTING.md) lists the failures that actually
+happened and the diagnostic that found each one, including a sender that looks
+alive but sends nothing, CMake picking mingw over MSVC, and pads resting at
+`LX=-3356`.
 
 ## Licence
 
-GPL-3.0. See [LICENSE](LICENSE).
-
-Uses [ViGEmBus / ViGEmClient](https://github.com/nefarius/ViGEmBus) by Nefarius
-Software Solutions for the virtual controllers, and [SDL2](https://www.libsdl.org/)
-for controller input on desktop.
+GPL-3.0, see [LICENSE](LICENSE). Built on
+[ViGEmBus](https://github.com/nefarius/ViGEmBus) by Nefarius Software Solutions
+and [SDL2](https://www.libsdl.org/).
